@@ -60,9 +60,10 @@ def parse_arguments():
         "-c",
         "--count",
         type=int,
-        nargs="?",
+        # nargs="?",
         help="The number of images to be created.",
-        required=True,
+        required=False,
+        default=1,
     )
     parser.add_argument(
         "-rs",
@@ -113,7 +114,7 @@ def parse_arguments():
         type=int,
         nargs="?",
         help="Define the height of the produced images if horizontal, else the width",
-        default=32,
+        default=48,
     )
     parser.add_argument(
         "-t",
@@ -181,12 +182,13 @@ def parse_arguments():
         "--handwritten",
         action="store_true",
         help='Define if the data will be "handwritten" by an RNN',
+        default=False
     )
     parser.add_argument(
         "-na",
         "--name_format",
         type=int,
-        help="Define how the produced files will be named. 0: [TEXT]_[ID].[EXT], 1: [ID]_[TEXT].[EXT] 2: [ID].[EXT] + one file labels.txt containing id-to-label mappings",
+        help="Define how the produced files will be named. 0: [TEXT]_[ID].[EXT], 1: [ID]_[TEXT].[EXT] 2: [ID].[EXT] + one file labels.txt containing id-to-label mappings, 3: [ID]_[TEXT].[EXT] + one file labels.txt containing id-to-label mappings",
         default=0,
     )
     parser.add_argument(
@@ -259,6 +261,7 @@ def parse_arguments():
         help="Define the width of the spaces between words. 2.0 means twice the normal space width",
         default=1.0,
     )
+    # !!! do not figure out the use
     parser.add_argument(
         "-cs",
         "--character_spacing",
@@ -291,6 +294,7 @@ def parse_arguments():
         type=str,
         nargs="?",
         help="Define a font directory to be used",
+        default=''
     )
     parser.add_argument(
         "-id",
@@ -306,9 +310,10 @@ def parse_arguments():
         type=str,
         nargs="?",
         help="Generate upper or lowercase only. arguments: upper or lower. Example: --case upper",
+        default='',
     )
     parser.add_argument(
-        "-dt", "--dict", type=str, nargs="?", help="Define the dictionary to be used"
+        "-dt", "--dict", type=str, nargs="?", help="Define the dictionary to be used", default='',
     )
     parser.add_argument(
         "-ws",
@@ -340,6 +345,14 @@ def parse_arguments():
         nargs="?",
         help="Define the image mode to be used. RGB is default, L means 8-bit grayscale images, 1 means 1-bit binary images stored with one pixel per byte, etc.",
         default="RGB",
+    )
+    parser.add_argument(
+        "-ci",
+        "--color_inverse",
+        type=str,
+        nargs="?",
+        help="Use 255 - img to inverse color value of image",
+        default=False,
     )
     return parser.parse_args()
 
@@ -393,7 +406,7 @@ def main():
     if args.use_wikipedia:
         strings = create_strings_from_wikipedia(args.length, args.count, args.language)
     elif args.input_file != "":
-        strings = create_strings_from_file(args.input_file, args.count)
+        strings = create_strings_from_file(args.input_file, args.count, max_length=args.length)
     elif args.random_sequences:
         strings = create_strings_randomly(
             args.length,
@@ -469,6 +482,7 @@ def main():
                 [args.stroke_fill] * string_count,
                 [args.image_mode] * string_count,
                 [args.output_bboxes] * string_count,
+                [args.color_inverse] * string_count,
             ),
         ),
         total=args.count,

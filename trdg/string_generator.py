@@ -1,15 +1,15 @@
 import random as rnd
+import random
 import string
 from typing import List
 
 import wikipedia
 
 
-def create_strings_from_file(filename: str, count: int) -> List[str]:
+def create_strings_from_file(filename: str, count: int, max_length: int = 25) -> List[str]:
     """
     Create all strings by reading lines in specified files
     """
-
     strings = []
 
     with open(filename, "r", encoding="utf8") as f:
@@ -18,10 +18,17 @@ def create_strings_from_file(filename: str, count: int) -> List[str]:
             raise Exception("No lines could be read in file")
         while len(strings) < count:
             if len(lines) >= count - len(strings):
-                strings.extend(lines[0 : count - len(strings)])
+                strings.extend(lines[0: count - len(strings)])
             else:
                 strings.extend(lines)
 
+    for i in range(len(strings)):
+        string = strings[i]
+        if len(string) > max_length:
+            tmp_start_idx = random.randint(0, len(string)-max_length-1)
+            string = string[tmp_start_idx: tmp_start_idx+max_length]
+            strings[i] = string
+    
     return strings
 
 

@@ -10,6 +10,9 @@ from typing import List, Tuple
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
+import codecs
+import chardet
+
 
 def load_dict(path: str) -> List[str]:
     """Read the dictionary file and returns all words in it."""
@@ -130,6 +133,9 @@ def make_filename_valid(value: str, allow_unicode: bool = False) -> str:
         )
     value = re.sub(r"[^\w\s-]", "", value)
 
+    if value.startswith('\\'):
+        value.replace("\\", "")
+
     # Image names will be shortened to avoid exceeding the max filename length
     return value[:200]
 
@@ -147,3 +153,28 @@ def get_text_height(image_font: ImageFont, text: str) -> int:
     """
     left, top, right, bottom = image_font.getbbox(text)
     return bottom
+
+
+def transform_txt_to_utf8(source_dir, target_dir):
+    os.makedirs(target_dir, exist_ok=True)
+    # traverse all the files in source_dir
+    for filename in os.listdir(source_dir):
+        if filename.endswith('.txt'):
+            source_file = os.path.join(source_dir, filename)  
+            target_file = os.path.join(target_dir, filename)  
+
+            # check code
+            with open(source_file, 'rb') as f:
+                raw_data = f.read()
+            result = chardet.detect(raw_data)
+            encoding = result['encoding']
+
+            # read file with code detected and transform to utf8
+            with codecs.open(source_file, 'r', encoding=encoding, errors='ignore') as f_source:  
+                content = f_source.read()
+            with codecs.open(target_file, 'w', encoding='utf-8') as f_target:  
+                f_target.write(content)
+
+            print(f'transform {filename} into utf-8')
+
+    print(f'finish all into {target_dir}')

@@ -1,5 +1,10 @@
 import os
+import time
+import numpy as np
+import random
 import random as rnd
+import logging
+from logging import getLogger
 
 from PIL import Image, ImageFilter, ImageStat
 
@@ -11,14 +16,16 @@ try:
 except ImportError as e:
     print("Missing modules for handwritten text generation.")
 
+logger = getLogger(__name__)
+logger.setLevel(level=logging.DEBUG)
 
 class FakeTextDataGenerator(object):
     @classmethod
     def generate_from_tuple(cls, t):
         """
         Same as generate, but takes all parameters as one tuple
+        return (dict): {'image': Image, 'index': int, 'mage_name': str, 'image_mask': Image}
         """
-
         cls.generate(*t)
 
     @classmethod
@@ -54,7 +61,8 @@ class FakeTextDataGenerator(object):
         stroke_fill: str = "#282828",
         image_mode: str = "RGB",
         output_bboxes: int = 0,
-    ) -> Image:
+        color_inverse: bool = False,
+    ) -> dict:
         image = None
 
         margin_top, margin_left, margin_bottom, margin_right = margins
@@ -126,18 +134,23 @@ class FakeTextDataGenerator(object):
 
         # Horizontal text
         if orientation == 0:
-            new_width = int(
-                distorted_img.size[0]
-                * (float(size - vertical_margin) / float(distorted_img.size[1]))
-            )
-            resized_img = distorted_img.resize(
-                (new_width, size - vertical_margin), Image.Resampling.LANCZOS
-            )
-            resized_mask = distorted_mask.resize(
-                (new_width, size - vertical_margin), Image.Resampling.NEAREST
-            )
-            background_width = width if width > 0 else new_width + horizontal_margin
-            background_height = size
+            try:
+                new_width = int(
+                    distorted_img.size[0]
+                    * (float(size - vertical_margin) / float(distorted_img.size[1]+1e-8))
+                )
+                resized_img = distorted_img.resize(
+                    (new_width, size - vertical_margin), Image.Resampling.LANCZOS
+                )
+                resized_mask = distorted_mask.resize(
+                    (new_width, size - vertical_margin), Image.Resampling.NEAREST
+                )
+                background_width = width if width > 0 else new_width + horizontal_margin
+                background_height = size
+            except Exception as e:
+                logger.error(f"new_width: {new_width}, size: {size}, vertical_margin: {vertical_margin}, new_width: {new_width}" + str(e))
+                return
+
         # Vertical text
         elif orientation == 1:
             new_height = int(
@@ -245,6 +258,24 @@ class FakeTextDataGenerator(object):
         final_image = background_img.filter(gaussian_filter)
         final_mask = background_mask.filter(gaussian_filter)
 
+        #############################
+        # inverse color, not finish #
+        #############################
+        if color_inverse:
+            if image_mode in ['RGB', 'L']:
+                resized_img = 255 - np.asarray(resized_img)
+                if image_mode == "L":
+                    resized_img = Image.fromarray(resized_img, mode='L')
+                elif image_mode == "RGB":
+                    resized_img = rgb2gray(rgb=resized_img)
+                    if len(resized_img.shape) == 3:
+                        raise ValueError(f"resized_img.shape: {resized_img.shape}")
+                    resized_img = Image.fromarray(resized_img, mode='L')
+
+            elif image_mode in ['1']:
+                resized_img = 1 - np.asarray(resized_img)
+                resized_img = Image.fromarray(resized_img, mode='1')
+
         #####################################
         # Generate name for resulting image #
         #####################################
@@ -257,19 +288,36 @@ class FakeTextDataGenerator(object):
             name = "{}_{}".format(str(index), text)
         elif name_format == 2:
             name = str(index)
+        elif name_format == 3:
+            name = "{}_{}".format(text, str(index))
         else:
             print("{} is not a valid name format. Using default.".format(name_format))
             name = "{}_{}".format(text, str(index))
 
         name = make_filename_valid(name, allow_unicode=True)
         image_name = "{}.{}".format(name, extension)
+
+        loop_st = time.time()
+        loop_ed = time.time()
+        while image_name in os.listdir(out_dir) and (loop_ed - loop_st) < 5:
+            name = "_".join([name, str(random.randint(0, 9))])
+            image_name = "{}.{}".format(name, extension)
+            loop_ed = time.time()
+        if image_name in os.listdir(out_dir):
+            name = "_".join([name, str(int(time.time()))])
+            image_name = "{}.{}".format(name, extension)
+
         mask_name = "{}_mask.png".format(name)
         box_name = "{}_boxes.txt".format(name)
         tess_box_name = "{}.box".format(name)
 
         # Save the image
         if out_dir is not None:
-            final_image.save(os.path.join(out_dir, image_name))
+            try:
+                final_image.save(os.path.join(out_dir, image_name))
+            except Exception as e:
+                print(f"image_name: {image_name}")
+                raise e
             if output_mask == 1:
                 final_mask.save(os.path.join(out_dir, mask_name))
             if output_bboxes == 1:
@@ -286,5 +334,11 @@ class FakeTextDataGenerator(object):
                         )
         else:
             if output_mask == 1:
-                return final_image, final_mask
-            return final_image
+                return {"index": index, "image": final_image, "final_mask": final_mask, "image_name": image_name}
+            return {"index": index, "image": final_image, "final_mask": final_mask}
+
+
+def rgb2gray(rgb):
+    r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
+    gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+    return gray

@@ -2,7 +2,7 @@ import os
 from typing import List, Tuple
 
 from trdg.generators.from_strings import GeneratorFromStrings
-from trdg.data_generator import FakeTextDataGenerator
+
 from trdg.string_generator import create_strings_randomly
 from trdg.utils import load_dict, load_fonts
 
