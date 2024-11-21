@@ -1,4 +1,5 @@
 import os
+import json
 import time
 import numpy as np
 import random
@@ -19,14 +20,17 @@ except ImportError as e:
 logger = getLogger(__name__)
 logger.setLevel(level=logging.DEBUG)
 
+
 class FakeTextDataGenerator(object):
     @classmethod
     def generate_from_tuple(cls, t):
         """
         Same as generate, but takes all parameters as one tuple
-        return (dict): {'image': Image, 'index': int, 'mage_name': str, 'image_mask': Image}
+        return (dict): {'index': int, 'image_name': str, 'image': PIL.Image.Image, "text": text} or 
+                        {"index": index, "image": final_image, "mask_image": final_mask, "image_name": image_name, "mask_name": mask_name, "text": text}
         """
-        cls.generate(*t)
+        ret = cls.generate(*t)
+        return ret
 
     @classmethod
     def generate(
@@ -62,6 +66,7 @@ class FakeTextDataGenerator(object):
         image_mode: str = "RGB",
         output_bboxes: int = 0,
         color_inverse: bool = False,
+        save: bool = False,
     ) -> dict:
         image = None
 
@@ -311,31 +316,48 @@ class FakeTextDataGenerator(object):
         box_name = "{}_boxes.txt".format(name)
         tess_box_name = "{}.box".format(name)
 
-        # Save the image
-        if out_dir is not None:
-            try:
-                final_image.save(os.path.join(out_dir, image_name))
-            except Exception as e:
-                print(f"image_name: {image_name}")
-                raise e
-            if output_mask == 1:
-                final_mask.save(os.path.join(out_dir, mask_name))
-            if output_bboxes == 1:
-                bboxes = mask_to_bboxes(final_mask)
-                with open(os.path.join(out_dir, box_name), "w") as f:
-                    for bbox in bboxes:
-                        f.write(" ".join([str(v) for v in bbox]) + "\n")
-            if output_bboxes == 2:
-                bboxes = mask_to_bboxes(final_mask, tess=True)
-                with open(os.path.join(out_dir, tess_box_name), "w") as f:
-                    for bbox, char in zip(bboxes, text):
-                        f.write(
-                            " ".join([char] + [str(v) for v in bbox] + ["0"]) + "\n"
-                        )
-        else:
-            if output_mask == 1:
-                return {"index": index, "image": final_image, "final_mask": final_mask, "image_name": image_name}
-            return {"index": index, "image": final_image, "final_mask": final_mask}
+        # label_name = ".".join([name, "txt"])
+
+        if save:
+            # Save the image
+            if out_dir is not None:
+                # image_dir = os.path.join(out_dir, "images")
+                image_dir = out_dir
+                os.makedirs(image_dir, exist_ok=True)
+                image_path = os.path.join(image_dir, image_name)
+                try:
+                    final_image.save(image_path)
+                except Exception as e:
+                    print(f"image_name: {image_name}")
+                    raise e
+                if output_mask == 1:
+                    final_mask.save(os.path.join(image_dir, mask_name))
+                if output_bboxes == 1:
+                    bboxes = mask_to_bboxes(final_mask)
+                    with open(os.path.join(out_dir, box_name), "w") as f:
+                        for bbox in bboxes:
+                            f.write(" ".join([str(v) for v in bbox]) + "\n")
+                if output_bboxes == 2:
+                    bboxes = mask_to_bboxes(final_mask, tess=True)
+                    with open(os.path.join(image_dir, tess_box_name), "w") as f:
+                        for bbox, char in zip(bboxes, text):
+                            f.write(
+                                " ".join([char] + [str(v) for v in bbox] + ["0"]) + "\n"
+                            )
+
+                # # save the labels
+                # if space_width == 0:
+                #     text = text.replace(" ", "")
+
+                # label_out_dir = os.path.join(out_dir, "labels")
+                # os.makedirs(label_out_dir, exist_ok=True)
+                # msg = f'{image_path}\t{text}'
+                # with open(os.path.join(label_out_dir, label_name), 'w+', encoding='utf8') as f:
+                #     f.write(msg)
+
+        if output_mask == 1:
+            return {"index": index, "image": np.asarray(final_image), "mask_image": np.asarray(final_mask), "image_name": image_name, "mask_name": mask_name, "text": text}
+        return {"index": index, "image": np.asarray(final_image), "image_name": image_name, "text": text}
 
 
 def rgb2gray(rgb):

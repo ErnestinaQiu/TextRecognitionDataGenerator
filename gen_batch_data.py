@@ -28,11 +28,30 @@ def RGB_to_Hex(rgb):
     return color
 
 
-def gen_imgs(count=5, language='cn', words_len_range=[1, 13], img_height=48, distort=True, fonts_dir='F:/nets/OCR/ocr_optimize/paddleocr/PaddleOCR/doc/multi_fonts/ch'):
+def gen_imgs(name_format=3, count=5, language='cn', words_len_range=[1, 13], img_height=48, distort=True, fonts_dir='F:/nets/OCR/ocr_optimize/dev/ocr/doc/multi_fonts/ch', save=True, debug=True):
+    """_summary_
+
+    Args:
+        name_format (_type_): 3: write img into outpit/images and label.txt into output/labels and labels.txt.
+        count (int, optional): _description_. Defaults to 5.
+        language (str, optional): _description_. Defaults to 'cn'.
+        words_len_range (list, optional): _description_. Defaults to [1, 13].
+        img_height (int, optional): _description_. Defaults to 48.
+        distort (bool, optional): _description_. Defaults to True.
+        fonts_dir (str, optional): _description_. Defaults to 'F:/nets/OCR/ocr_optimize/paddleocr/PaddleOCR/doc/multi_fonts/ch'.
+        save (bool, optional): _description_. Defaults to True.
+        debug (bool, optional): _description_. Defaults to True.
+
+    Raises:
+        ValueError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     # Argument parsing
     args = parse_arguments()
 
-    args.name_format = 3
+    args.name_format = name_format
     args.language = language
     args.length = random.randint(words_len_range[0], words_len_range[1])
 
@@ -274,6 +293,7 @@ def gen_imgs(count=5, language='cn', words_len_range=[1, 13], img_height=48, dis
                 [args.image_mode] * string_count,
                 [args.output_bboxes] * string_count,
                 [args.color_inverse] * string_count,
+                [save] * string_count,
             ),
         ):
         if tmp_dict is not None:
@@ -286,7 +306,7 @@ def gen_imgs(count=5, language='cn', words_len_range=[1, 13], img_height=48, dis
     if args.name_format == 2:
         # Create file with filename-to-label connections
         with open(
-            os.path.join(args.output_dir, "labels.txt"), "w", encoding="utf8"
+            os.path.join(args.output_dir, "labels.txt"), "a+", encoding="utf8"
         ) as f:
             for i in range(string_count):
                 file_name = str(i) + "." + args.extension
@@ -296,17 +316,24 @@ def gen_imgs(count=5, language='cn', words_len_range=[1, 13], img_height=48, dis
                 f.write("{} {}\n".format(file_name, label))
     elif args.name_format == 3:
         with open(
-            os.path.join(args.output_dir, "labels.txt"), "w", encoding="utf8"
+            os.path.join(args.output_dir, "labels.txt"), "a+", encoding="utf8"
         ) as f:
             for i in range(len(dicts)):
                 tmp_dict = dicts[i]
-                file_name = tmp_dict['image_name']
+                file_name = os.path.join(args.output_dir, tmp_dict['image_name'])
+                label = strings[i]
                 if args.space_width == 0:
                     label = label.replace(" ", "")
-                f.write("{} {}\n".format(file_name, label))
+                else:
+                    label = label
+                f.write("{}\t{}\n".format(file_name, label))
+        return dicts
 
 
 if __name__ == "__main__":
-    for i in range(100):
+    dicts = []
+    for i in range(10):
         print(f"batch index: {i}")
-        gen_imgs(count=10)
+        tmp_dict = gen_imgs(count=1, save=False)
+        dicts.append(tmp_dict)
+    print(dicts)
