@@ -28,10 +28,11 @@ def RGB_to_Hex(rgb):
     return color
 
 
-def gen_imgs(name_format=3, count=5, language='cn', words_len_range=[1, 13], img_height=48, distort=True, fonts_dir='F:/nets/OCR/ocr_optimize/dev/ocr/doc/multi_fonts/ch', save=True, debug=True):
+def gen_imgs(out_dir: str, name_format=3, count=5, language='cn', words_len_range=[1, 13], img_height=48, distort=True, fonts_dir='F:/nets/OCR/ocr_optimize/dev/ocr/doc/multi_fonts/ch', save=True, debug=True):
     """_summary_
 
     Args:
+        out_dir (str): 
         name_format (_type_): 3: write img into outpit/images and label.txt into output/labels and labels.txt.
         count (int, optional): _description_. Defaults to 5.
         language (str, optional): _description_. Defaults to 'cn'.
@@ -51,6 +52,7 @@ def gen_imgs(name_format=3, count=5, language='cn', words_len_range=[1, 13], img
     # Argument parsing
     args = parse_arguments()
 
+    args.output_dir = out_dir
     args.name_format = name_format
     args.language = language
     args.length = random.randint(words_len_range[0], words_len_range[1])
@@ -331,9 +333,10 @@ def gen_imgs(name_format=3, count=5, language='cn', words_len_range=[1, 13], img
 
 
 if __name__ == "__main__":
+    out_dir = "F:/nets/OCR/ocr_optimize/data/synth/train"
     dicts = []
-    for i in range(10):
+    for i in range(20000):
         print(f"batch index: {i}")
-        tmp_dict = gen_imgs(count=1, save=False)
+        tmp_dict = gen_imgs(out_dir=out_dir, count=5, save=True)
         dicts.append(tmp_dict)
     print(dicts)

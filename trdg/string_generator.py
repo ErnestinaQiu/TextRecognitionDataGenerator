@@ -13,14 +13,18 @@ def create_strings_from_file(filename: str, count: int, max_length: int = 25) ->
     strings = []
 
     with open(filename, "r", encoding="utf8") as f:
-        lines = [l[0:200] for l in f.read().splitlines() if len(l) > 0]
+        lines = [l for l in f.read().splitlines() if len(l) > 0]
         if len(lines) == 0:
             raise Exception("No lines could be read in file")
         while len(strings) < count:
-            if len(lines) >= count - len(strings):
-                strings.extend(lines[0: count - len(strings)])
-            else:
-                strings.extend(lines)
+            line_idx = random.randint(0, len(lines)-1)
+            string = lines[line_idx]
+            line_len = len(string)
+            st_idx = random.randint(0, line_len-1)
+            string_len = random.randint(0, max_length-1)
+            ed_idx = st_idx + string_len
+            string = string[st_idx: ed_idx]
+            strings.append(string)
 
     for i in range(len(strings)):
         string = strings[i]
