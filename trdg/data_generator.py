@@ -68,6 +68,9 @@ class FakeTextDataGenerator(object):
         color_inverse: bool = False,
         save: bool = False,
     ) -> dict:
+        if name_format == 4:
+            save = False
+
         image = None
 
         margin_top, margin_left, margin_bottom, margin_right = margins
@@ -281,44 +284,44 @@ class FakeTextDataGenerator(object):
                 resized_img = 1 - np.asarray(resized_img)
                 resized_img = Image.fromarray(resized_img, mode='1')
 
-        #####################################
-        # Generate name for resulting image #
-        #####################################
-        # We remove spaces if space_width == 0
-        if space_width == 0:
-            text = text.replace(" ", "")
-        if name_format == 0:
-            name = "{}_{}".format(text, str(index))
-        elif name_format == 1:
-            name = "{}_{}".format(str(index), text)
-        elif name_format == 2:
-            name = str(index)
-        elif name_format == 3:
-            name = "{}_{}".format(text, str(index))
-        else:
-            print("{} is not a valid name format. Using default.".format(name_format))
-            name = "{}_{}".format(text, str(index))
-
-        name = make_filename_valid(name, allow_unicode=True)
-        image_name = "{}.{}".format(name, extension)
-
-        loop_st = time.time()
-        loop_ed = time.time()
-        while image_name in os.listdir(out_dir) and (loop_ed - loop_st) < 5:
-            name = "_".join([name, str(random.randint(0, 9))])
-            image_name = "{}.{}".format(name, extension)
-            loop_ed = time.time()
-        if image_name in os.listdir(out_dir):
-            name = "_".join([name, str(int(time.time()))])
-            image_name = "{}.{}".format(name, extension)
-
-        mask_name = "{}_mask.png".format(name)
-        box_name = "{}_boxes.txt".format(name)
-        tess_box_name = "{}.box".format(name)
-
-        # label_name = ".".join([name, "txt"])
-
         if save:
+            #####################################
+            # Generate name for resulting image #
+            #####################################
+            # We remove spaces if space_width == 0
+            if space_width == 0:
+                text = text.replace(" ", "")
+            if name_format == 0:
+                name = "{}_{}".format(text, str(index))
+            elif name_format == 1:
+                name = "{}_{}".format(str(index), text)
+            elif name_format == 2:
+                name = str(index)
+            elif name_format == 3:
+                name = "{}_{}".format(text, str(index))
+            else:
+                print("{} is not a valid name format. Using default.".format(name_format))
+                name = "{}_{}".format(text, str(index))
+
+            name = make_filename_valid(name, allow_unicode=True)
+            image_name = "{}.{}".format(name, extension)
+
+            loop_st = time.time()
+            loop_ed = time.time()
+            while image_name in os.listdir(out_dir) and (loop_ed - loop_st) < 5:
+                name = "_".join([name, str(random.randint(0, 9))])
+                image_name = "{}.{}".format(name, extension)
+                loop_ed = time.time()
+            if image_name in os.listdir(out_dir):
+                name = "_".join([name, str(int(time.time()))])
+                image_name = "{}.{}".format(name, extension)
+
+            mask_name = "{}_mask.png".format(name)
+            box_name = "{}_boxes.txt".format(name)
+            tess_box_name = "{}.box".format(name)
+
+            # label_name = ".".join([name, "txt"])
+
             # Save the image
             if out_dir is not None:
                 # image_dir = os.path.join(out_dir, "images")
@@ -355,10 +358,12 @@ class FakeTextDataGenerator(object):
                 # with open(os.path.join(label_out_dir, label_name), 'w+', encoding='utf8') as f:
                 #     f.write(msg)
 
-        if output_mask == 1:
-            return {"index": index, "image": np.asarray(final_image), "mask_image": np.asarray(final_mask), "image_name": image_name, "mask_name": mask_name, "text": text}
-        return {"index": index, "image": np.asarray(final_image), "image_name": image_name, "text": text}
-
+        if name_format != 4:
+            if output_mask == 1:
+                return {"index": index, "image": np.asarray(final_image), "mask_image": np.asarray(final_mask), "image_name": image_name, "mask_name": mask_name, "text": text}
+            return {"index": index, "image": np.asarray(final_image), "image_name": image_name, "text": text}
+        else:
+            return {"image": np.asarray(final_image), "text": text}
 
 def rgb2gray(rgb):
     r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]

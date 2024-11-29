@@ -4,6 +4,7 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter, ImageFont
 
 from trdg.utils import get_text_width, get_text_height
 
+
 # Thai Unicode reference: https://jrgraphix.net/r/Unicode/0E00-0E7F
 TH_TONE_MARKS = [
     "0xe47",

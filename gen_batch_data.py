@@ -28,7 +28,7 @@ def RGB_to_Hex(rgb):
     return color
 
 
-def gen_imgs(out_dir: str, name_format=3, count=5, language='cn', words_len_range=[1, 13], img_height=48, distort=True, fonts_dir='F:/nets/OCR/ocr_optimize/dev/ocr/doc/multi_fonts/ch', save=True, debug=True):
+def gen_imgs(out_dir: str, name_format=3, count=5, words_len_range=[1, 25], img_height=48, distort=True, fonts_dir='./trdg/fonts/multi_fonts/ch', save=True, debug=True):
     """_summary_
 
     Args:
@@ -54,7 +54,13 @@ def gen_imgs(out_dir: str, name_format=3, count=5, language='cn', words_len_rang
 
     args.output_dir = out_dir
     args.name_format = name_format
-    args.language = language
+    tmp = random.random()
+    if tmp < 0.2:
+        args.language = 'en'
+        args.fonts_dir = './trdg/fonts/latin'
+    else:
+        args.language = 'cn'
+        args.fonts_dir = './trdg/fonts/cn'
     args.length = random.randint(words_len_range[0], words_len_range[1])
 
     args.count = count
@@ -103,24 +109,18 @@ def gen_imgs(out_dir: str, name_format=3, count=5, language='cn', words_len_rang
         args.blur = 1
 
     # set background
-    tmp = random.random()
-    if tmp < 0.33:
-        args.background = 0
-    elif tmp < 0.66:
-        args.background = 1
-    elif tmp < 0.99:
-        args.background = 2
-    else:
-        args.background = 3
+    args.background = 1
 
     # set the space width
     tmp = random.random()
-    if tmp < 0.7:
+    if tmp < 0.2:
         args.space_width = 1e-4
-    elif tmp < 0.9:
+    elif tmp < 0.4:
         args.space_width = random.random()
+    elif tmp < 0.9:
+        args.space_width = random.randint(1, 2)
     else:
-        args.space_width = random.randint(0, 5)
+        args.space_width = random.randint(1, 5)
 
     # set alignment
     tmp = random.random()
@@ -132,7 +132,7 @@ def gen_imgs(out_dir: str, name_format=3, count=5, language='cn', words_len_rang
         args.alignment = 2
 
     # set margins around text when rendered
-    args.margins = (random.randint(0, 10), random.randint(0, 10), random.randint(0, 10), random.randint(0, 10))
+    args.margins = (random.randint(0, 5), random.randint(0, 5), random.randint(0, 5), random.randint(0, 5))
 
     # random to generate char with 90 rotation and 270 rotation
     if random.random() < 0.1:
@@ -147,16 +147,11 @@ def gen_imgs(out_dir: str, name_format=3, count=5, language='cn', words_len_rang
             args.random_skew = True
 
     # set font and stroke width
-    special_stroke_font = ['华文琥珀', '微软雅黑粗体', '华文隶体', '华文新魏', '华文行楷', '微软雅黑粗体']
-    fonts_fs = os.listdir(fonts_dir)
+    fonts_fs = os.listdir(args.fonts_dir)
     choice_idx = random.randint(0, len(fonts_fs)-1)
     font_name = fonts_fs[choice_idx]
-    font_fp = os.path.join(fonts_dir, font_name)
-    args.font = font_fp
-    if font_name not in special_stroke_font:
-        args.stroke_width = random.randint(0, 1)
-    else:
-        args.stroke_width = random.randint(0, 1)
+    args.font = os.path.join(args.fonts_dir, font_name)
+    args.stroke_width = random.randint(0, 1)
 
     # Create the directory if it does not exist.
     try:
@@ -194,40 +189,34 @@ def gen_imgs(out_dir: str, name_format=3, count=5, language='cn', words_len_rang
         fonts = load_fonts(args.language)
 
     # Creating synthetic sentences (or word)
-    tmp = random.random()
-    if tmp < 0.3:
-        pass
+    if args.language == 'cn':
+        tmp = random.random()
+        if tmp < 0.3:
+            pass
+        else:
+            prepare_txt_dir = os.path.join(os.getcwd(), "trdg", "texts")
+            if not os.path.exists(prepare_txt_dir):
+                raise ValueError(f"fail to find {prepare_txt_dir}")
+            fs = os.listdir(prepare_txt_dir)
+            choice_fp = os.path.join(prepare_txt_dir, fs[random.randint(0, len(fs)-1)])
+            args.input_file = choice_fp
     else:
-        prepare_txt_dir = os.path.join(os.getcwd(), "trdg", "texts")
-        if not os.path.exists(prepare_txt_dir):
-            raise ValueError(f"fail to find {prepare_txt_dir}")
-        fs = os.listdir(prepare_txt_dir)
-        choice_fp = os.path.join(prepare_txt_dir, fs[random.randint(0, len(fs)-1)])
-        args.input_file = choice_fp
+        args.input_file = ''
 
     strings = []
 
-    if args.use_wikipedia:
-        strings = create_strings_from_wikipedia(args.length, args.count, args.language)
-    elif args.input_file != "":
+    if args.input_file != "":
         strings = create_strings_from_file(args.input_file, args.count, max_length=args.length)
-    elif args.random_sequences:
+    elif args.random_sequences and tmp < 0.2:
         strings = create_strings_randomly(
-            args.length,
-            args.random,
-            args.count,
-            args.include_letters,
-            args.include_numbers,
-            args.include_symbols,
-            args.language,
-        )
-        # Set a name format compatible with special characters automatically if they are used
-        if args.include_symbols or True not in (
-            args.include_letters,
-            args.include_numbers,
-            args.include_symbols,
-        ):
-            args.name_format = 2
+                    args.length,
+                    args.random,
+                    args.count,
+                    args.include_letters,
+                    args.include_numbers,
+                    args.include_symbols,
+                    args.language,
+                )
     else:
         strings = create_strings_from_dict(
             args.length, args.random, args.count, lang_dict
@@ -241,17 +230,24 @@ def gen_imgs(out_dir: str, name_format=3, count=5, language='cn', words_len_rang
             new_strings.append(string)
     strings = new_strings
 
-    if args.language == "ar":
-        from arabic_reshaper import ArabicReshaper
-        from bidi.algorithm import get_display
-
-        arabic_reshaper = ArabicReshaper()
-        strings = [
-            " ".join(
-                [get_display(arabic_reshaper.reshape(w)) for w in s.split(" ")[::-1]]
+    while len(strings) == 0:
+        while len(strings) == 0:
+            strings = create_strings_from_dict(
+                args.length, args.random, args.count, lang_dict
             )
-            for s in strings
-        ]
+
+        new_strings = []
+        for j in range(len(strings)):
+            string = strings[j]
+            string = string.replace("\t", "").replace("\\t", "").replace('\n', '').replace('\r', '')
+            if len(string) > args.length:
+                tmp_st = random.randint(0, len(string)-args.length)
+                tmp_ed = tmp_st + random.randint(1, args.length)
+                string = string[tmp_st: tmp_ed]
+            if len(string) > 0:
+                new_strings.append(string)
+        strings = new_strings
+
     if args.case == "upper":
         strings = [x.upper() for x in strings]
     if args.case == "lower":
@@ -322,7 +318,7 @@ def gen_imgs(out_dir: str, name_format=3, count=5, language='cn', words_len_rang
         ) as f:
             for i in range(len(dicts)):
                 tmp_dict = dicts[i]
-                file_name = os.path.join(args.output_dir, tmp_dict['image_name'])
+                file_name = os.path.join(tmp_dict['image_name'])
                 label = strings[i]
                 if args.space_width == 0:
                     label = label.replace(" ", "")
@@ -333,9 +329,9 @@ def gen_imgs(out_dir: str, name_format=3, count=5, language='cn', words_len_rang
 
 
 if __name__ == "__main__":
-    out_dir = "F:/nets/OCR/ocr_optimize/data/synth/train"
+    out_dir = "F:/nets/OCR/ocr_optimize/data/synth1/test"
     dicts = []
-    for i in range(20000):
+    for i in range(2000):
         print(f"batch index: {i}")
         tmp_dict = gen_imgs(out_dir=out_dir, count=5, save=True)
         dicts.append(tmp_dict)

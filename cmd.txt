@@ -1,0 +1,10 @@
+python ./trdg/run.py -l ch -c 10 --output_dir "./tests/out/" --font_dir F:/nets/OCR/ocr_optimize/paddleocr/PaddleOCR/doc/multi_fonts/ch -w 10
+
+python ./trdg/run.py -l cn -c 1 --output_dir "./tests/out/" --font_dir F:/nets/OCR/ocr_optimize/paddleocr/PaddleOCR/doc/multi_fonts/ch -w 5  --stroke_width 1
+
+python ./trdg/run.py -l cn -c 1 --output_dir "./tests/out/" --font F:/nets/OCR/ocr_optimize/paddleocr/PaddleOCR/doc/multi_fonts/ch/微软雅黑粗体.ttf -w 5  --stroke_width 2 --stroke_fill #FFB6C1
+
+python gen_batch_data.py -l cn -c 1 --output_dir "./tests/out/" --font F:/nets/OCR/ocr_optimize/paddleocr/PaddleOCR/doc/multi_fonts/ch/微软雅黑粗体.ttf -w 5  --stroke_width 2 --stroke_fill #FFB6C1
+
+python ./trdg/run.py -l cn -c 1 --output_dir "./tests/out/" --font F:/nets/OCR/ocr_optimize/paddleocr/PaddleOCR/doc/multi_fonts/ch/微软雅黑粗体.ttf -w 5  --input_file F:/nets/OCR/ocr_optimize/paddleocr/TextRecognitionDataGenerator/trdg/texts/demand_doc.txt
+

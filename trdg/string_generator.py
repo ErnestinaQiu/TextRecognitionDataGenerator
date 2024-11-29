@@ -3,8 +3,6 @@ import random
 import string
 from typing import List
 
-import wikipedia
-
 
 def create_strings_from_file(filename: str, count: int, max_length: int = 25) -> List[str]:
     """
@@ -32,7 +30,7 @@ def create_strings_from_file(filename: str, count: int, max_length: int = 25) ->
             tmp_start_idx = random.randint(0, len(string)-max_length-1)
             string = string[tmp_start_idx: tmp_start_idx+max_length]
             strings[i] = string
-    
+
     return strings
 
 
@@ -103,9 +101,15 @@ def create_strings_randomly(
     pool = ""
     if let:
         if lang == "cn":
-            pool += "".join(
-                [chr(i) for i in range(19968, 40908)]
-            )  # Unicode range of CHK characters
+            # pool += "".join(
+            #     [chr(i) for i in range(19968, 40908)]
+            # )  # Unicode range of CHK characters
+            cn_dict_path = 'trdg/dicts/cn.txt'
+            with open(cn_dict_path, 'r', encoding='utf8') as f:
+                lines = f.readlines()
+            for line in lines:
+                line = line.replace('\n', '').replace('\t', '')
+                pool += line
         elif lang == "ja":
             pool += "".join(
                 [chr(i) for i in range(12288, 12351)]
@@ -147,5 +151,9 @@ def create_strings_randomly(
             seq_len = rnd.randint(min_seq_len, max_seq_len)
             current_string += "".join([rnd.choice(pool) for _ in range(seq_len)])
             current_string += " "
+        if len(current_string) > length:
+            tmp_st = random.randint(0, len(current_string)-length)
+            tmp_ed = tmp_st + random.randint(1, length)
+            current_string = current_string[tmp_st: tmp_ed]
         strings.append(current_string[:-1])
     return strings
