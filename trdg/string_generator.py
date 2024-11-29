@@ -48,7 +48,12 @@ def create_strings_from_dict(
         for _ in range(0, rnd.randint(1, length) if allow_variable else length):
             current_string += lang_dict[rnd.randrange(dict_len)]
             current_string += " "
+        if len(current_string) > length:
+            tmp_st = random.randint(0, len(current_string) - length)
+            tmp_ed = tmp_st + random.randint(1, length)
+            current_string = current_string[tmp_st: tmp_ed]
         strings.append(current_string[:-1])
+    
     return strings
 
 

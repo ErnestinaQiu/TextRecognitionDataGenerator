@@ -18,6 +18,10 @@ from trdg.utils import load_dict, load_fonts
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "trdg"))
 
+
+special_punctuation_label_replace_dict = {'（': '(', '）': ')', 'ɡ': 'g', '“': '"', '”': '"', '〔': '[', '〕': ']', '【': '[', '】': ']', 'UNKNOWN': '·', '—': '一', '～':'~', '！': '!', '×':'x', '●': '·', '∶': ':', '︰': ':', '＝': '=', '⑴': '(1)', '⑵': '(2)', '⑶': '(3)', '⑷': '(4)', '－': '一', '―': '一', '＜': '<', '＿': '_', '／': '/', '┅': '···', 'Ｃ': 'C', '─': '-', 'Ｏ': 'O', 'Ｈ': 'H', '１': '1', '２': '2', '３': '3', '４': '4', 'Ｎ': 'N'}
+
+
 def RGB_to_Hex(rgb):
     """RGB格式颜色转换为16进制颜色格式"""
     color = '#'
@@ -28,7 +32,23 @@ def RGB_to_Hex(rgb):
     return color
 
 
-def gen_imgs(out_dir: str, name_format=3, count=5, words_len_range=[1, 25], img_height=48, distort=True, fonts_dir='./trdg/fonts/multi_fonts/ch', save=True, debug=True):
+def get_char_dict(char_dict_path):
+    with open(char_dict_path, 'r', encoding='utf8') as f:
+        lines = f.readlines()
+    chars_dict = {}
+    chars = ''
+    for i in range(len(lines)):
+        line = lines[i]
+        char = line.replace('\n', '').replace('\t', '').replace(' ', '')
+        chars_dict[char] = i
+        chars += char
+
+    char_set = list(set(chars))
+    assert len(char_set) == len(chars), f'len(char_set): {len(char_set)}, len(chars): {len(chars)}'
+    return chars, chars_dict
+
+
+def gen_imgs(out_dir: str, name_format=3, count=5, words_len_range=[1, 25], img_height=48, distort=True, fonts_dir='./trdg/fonts/multi_fonts/ch', save=True, special_char_replace_dict=special_punctuation_label_replace_dict, debug=True):
     """_summary_
 
     Args:
@@ -61,6 +81,7 @@ def gen_imgs(out_dir: str, name_format=3, count=5, words_len_range=[1, 25], img_
     else:
         args.language = 'cn'
         args.fonts_dir = './trdg/fonts/cn'
+
     args.length = random.randint(words_len_range[0], words_len_range[1])
 
     args.count = count
@@ -231,22 +252,21 @@ def gen_imgs(out_dir: str, name_format=3, count=5, words_len_range=[1, 25], img_
     strings = new_strings
 
     while len(strings) == 0:
-        while len(strings) == 0:
-            strings = create_strings_from_dict(
-                args.length, args.random, args.count, lang_dict
-            )
+        strings = create_strings_from_dict(
+            args.length, args.random, args.count, lang_dict
+        )
 
-        new_strings = []
-        for j in range(len(strings)):
-            string = strings[j]
-            string = string.replace("\t", "").replace("\\t", "").replace('\n', '').replace('\r', '')
-            if len(string) > args.length:
-                tmp_st = random.randint(0, len(string)-args.length)
-                tmp_ed = tmp_st + random.randint(1, args.length)
-                string = string[tmp_st: tmp_ed]
-            if len(string) > 0:
-                new_strings.append(string)
-        strings = new_strings
+    new_strings = []
+    for j in range(len(strings)):
+        string = strings[j]
+        string = string.replace("\t", "").replace("\\t", "").replace('\n', '').replace('\r', '').replace(' ', '')
+        if len(string) > args.length:
+            tmp_st = random.randint(0, len(string)-args.length)
+            tmp_ed = tmp_st + random.randint(1, args.length)
+            string = string[tmp_st: tmp_ed]
+        if len(string) > 0 and len(string) <= words_len_range[1]:
+            new_strings.append(string)
+    strings = new_strings
 
     if args.case == "upper":
         strings = [x.upper() for x in strings]
@@ -324,12 +344,19 @@ def gen_imgs(out_dir: str, name_format=3, count=5, words_len_range=[1, 25], img_
                     label = label.replace(" ", "")
                 else:
                     label = label
+                new_label = ''
+                for tmp in label:
+                    if tmp in special_char_replace_dict.keys():
+                        new_label += special_char_replace_dict[tmp]
+                    else:
+                        new_label += tmp
+
                 f.write("{}\t{}\n".format(file_name, label))
         return dicts
 
 
 if __name__ == "__main__":
-    out_dir = "F:/nets/OCR/ocr_optimize/data/synth1/test"
+    out_dir = "F:/nets/OCR/ocr_optimize/data/synth1/train"
     dicts = []
     for i in range(2000):
         print(f"batch index: {i}")
